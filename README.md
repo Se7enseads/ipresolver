@@ -89,19 +89,21 @@ For more information about git you can checkout the git [documentation.](https:/
 Access the code from the cloned directory and launch it using Visual Studio Code or VScode. To run this code efficiently:
 
 1. Install the Python extensions in the extensions tab found on the left side of vscode or by pressing `Ctrl + Shift + X`. and install the first one by `ms-python`.
-2. Install `Code Runner` extension by using the method above by searching code runner by `formulahendry`.
-3. In the setting.json file add the following line:
 
-```json
-"code-runner.executorMap": {
-    "python": "python3"
-  },
+To run this code:
+
+1. Open the terminal VSCode right clicking on the empty space in the explorer on the right and clicking on `Open in integrated Terminal`.
+2. Run the following command:
+
+```bash
+cd python && python3 main.py
 ```
 
-To run the code click the play icon on the top right or `Ctrl + Shift + N`.
+To see more options commands run:
 
-1. To run the tests click on the testing tab on the left.
-2. Click on the fast forward button next to the word testing and vscode should run all tests.
+```bash
+python3 main.py --help
+```
 
 ## 📝 License
 
