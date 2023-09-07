@@ -8,6 +8,7 @@ sqlalchemy = "*"
 click = "*"
 inquirer = "*"
 tabulate = "*"
+pydantic = "*"
 
 [dev-packages]
 
