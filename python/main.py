@@ -17,6 +17,9 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+SUCCESS_COLOR = 'green'
+ERROR_COLOR = 'red'
+WARNING_COLOR = 'yellow'
 
 class IPAddress(Base):
     __tablename__ = 'ip_addresses'
@@ -66,10 +69,10 @@ def display_ip_history():
 def resolve_ip():
     while True:
         input_url = click.prompt(
-            "Please enter a website address (URL) or type 'back' to quit", default='', show_default=False)
+            click.style("Please enter a website address (URL) or type 'back' to quit", fg="blue"), default='', show_default=False)
 
         if input_url == 'back':
-            print("Operation aborted by the user.")
+            print(click.style("Operation aborted by the user.", fg=WARNING_COLOR))
             break
 
         try:
@@ -80,22 +83,22 @@ def resolve_ip():
                 hostname = input_url
 
             if not is_valid_hostname(hostname):
-                print("Invalid input. Please enter a valid hostname or URL.")
+                print(click.style("Invalid input. Please enter a valid hostname or URL.", fg=WARNING_COLOR))
                 continue
 
             if len(hostname) <= 4:
-                print("Hostname should be more than 4 characters.")
+                print(click.style("Hostname should be more than 4 characters.", fg=WARNING_COLOR))
                 continue
 
             ip_address = socket.gethostbyname(hostname)
             store_ip_address(engine, hostname, ip_address)
             print(f"\n\n{'*' * 40}")
-            print(click.style(f'Hostname: {hostname}', fg='green'))
+            print(click.style(f'Hostname: {hostname}', fg=SUCCESS_COLOR))
             print(f'IP: {ip_address}')
             print(f"{'*' * 40}\n\n")
         except socket.gaierror as error:
             print(click.style(
-                f'Error: Unable to resolve hostname {hostname}.', fg="red"))
+                f'Error: Unable to resolve hostname {hostname}.', fg=ERROR_COLOR))
 
 
 def delete_record():
@@ -104,7 +107,7 @@ def delete_record():
     try:
         record_id = int(record_id)
     except ValueError:
-        print(click.style("Invalid ID. Please enter a valid numeric ID.", fg="red"))
+        print(click.style("Invalid ID. Please enter a valid numeric ID.", fg=WARNING_COLOR))
         return
 
     ip_addresses = get_ip_addresses()
@@ -113,20 +116,20 @@ def delete_record():
             session.delete(ip_address)
             session.commit()
             print(click.style(
-                f"Record with ID {record_id} deleted successfully.", fg="green"))
+                f"Record with ID {record_id} deleted successfully.", fg=SUCCESS_COLOR))
             return
 
-    print(f"No record found with ID {record_id}.")
+    print(click.style(f"No record found with ID {record_id}.", fg=WARNING_COLOR))
 
 
 def clear_database():
     try:
         session.query(IPAddress).delete()
         session.commit()
-        print(click.style("Database cleared successfully.", fg="green"))
+        print(click.style("Database cleared successfully.", fg=SUCCESS_COLOR))
     except Exception as e:
         session.rollback()
-        print(click.style(f"Error clearing the database: {str(e)}", fg="red"))
+        print(click.style(f"Error clearing the database: {str(e)}", fg=ERROR_COLOR))
 
 
 @click.command()
@@ -161,7 +164,7 @@ def get_hostname_ip(resolve, history, delete, clear):
             answers = inquirer.prompt(questions)
 
             if answers['menu'] == "Exit":
-                print("Operation aborted by the user.")
+                print(click.style("Operation aborted by the user.", fg=WARNING_COLOR))
                 break
 
             elif answers['menu'] == "Display IP History":
