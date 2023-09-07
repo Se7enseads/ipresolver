@@ -95,7 +95,8 @@ def resolve_ip():
             print(f'IP: {ip_address}')
             print(f"{'*' * 40}\n\n")
         except socket.gaierror as error:
-            print(click.style(f'Error: Unable to resolve hostname {hostname}.',fg="green"))
+            print(click.style(
+                f'Error: Unable to resolve hostname {hostname}.', fg="red"))
 
 
 def delete_record():
@@ -112,7 +113,8 @@ def delete_record():
         if ip_address.id == record_id:
             session.delete(ip_address)
             session.commit()
-            print(click.style(f"Record with ID {record_id} deleted successfully.", fg="green"))
+            print(click.style(
+                f"Record with ID {record_id} deleted successfully.", fg="green"))
             return
 
     print(f"No record found with ID {record_id}.")
