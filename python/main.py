@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ValidationError, field_validator, Field
 from tabulate import tabulate
 
 Base = declarative_base()
@@ -32,15 +32,13 @@ class IPAddress(Base):
 
 
 class ResolveInput(BaseModel):
-    input_url: str
+    input_url: str = Field(min_length=6, max_length=20)
 
     @field_validator('input_url')
     def validate_url(cls, value):
         if not is_valid_hostname(value):
             raise ValueError(
                 "Invalid input. Please enter a valid hostname or URL.")
-        if len(value) <= 4:
-            raise ValueError("Hostname should be more than 4 characters.")
         return value
 
 
@@ -104,8 +102,6 @@ def resolve_ip():
             print(click.style(f'Hostname: {hostname}', fg=SUCCESS_COLOR))
             print(f'IP: {ip_address}')
             print(f"{'*' * 40}\n\n")
-        except ValidationError as e:
-            print(click.style(f"Error: {str(e)}", fg=ERROR_COLOR))
         except socket.gaierror as error:
             print(click.style(
                 f'Error: Unable to resolve hostname {hostname}.', fg=ERROR_COLOR))
