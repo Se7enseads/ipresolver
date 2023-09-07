@@ -20,3 +20,23 @@ class IPAddress(Base):
     ip_address = Column(String)
 
 
+def is_valid_hostname(hostname):
+    hostname_pattern = r'^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$'
+    return re.match(hostname_pattern, hostname)
+
+
+def store_ip_address(engine, hostname, ip_address):
+
+    ip_entry = IPAddress(hostname=hostname, ip_address=ip_address)
+
+    session.add(ip_entry)
+    session.commit()
+    session.close()
+
+
+def get_ip_addresses():
+
+    ip_addresses = session.query(IPAddress).all()
+
+    session.close()
+    return ip_addresses
