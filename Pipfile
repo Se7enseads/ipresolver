@@ -9,6 +9,7 @@ click = "*"
 inquirer = "*"
 tabulate = "*"
 pydantic = "*"
+pytest = "*"
 
 [dev-packages]
 
