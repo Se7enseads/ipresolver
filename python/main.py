@@ -78,4 +78,37 @@ def resolve_ip():
             print(f'IP: {ip_address}')
             print(f"{'*' * 40}\n\n")
         except socket.gaierror as error:
-            print(click.style(f'Error: Unable to resolve hostname {hostname}.',fg="red"))
+            print(click.style(
+                f'Error: Unable to resolve hostname {hostname}.', fg="red"))
+
+
+@click.command()
+@click.option('--resolve', is_flag=True, help="Resolve and store IP address for a URL.")
+def get_hostname_ip(resolve):
+
+    if resolve:
+        resolve_ip()
+
+    else:
+        questions = [
+            inquirer.List('menu',
+                          message="Select an option",
+                          choices=[
+                              "Resolve and Store IP Address",
+                              "Exit"
+                          ]),
+        ]
+
+        while True:
+            answers = inquirer.prompt(questions)
+
+            if answers['menu'] == "Exit":
+                print("Operation aborted by the user.")
+                break
+
+            elif answers['menu'] == "Resolve and Store IP Address":
+                resolve_ip()
+
+
+if __name__ == "__main__":
+    get_hostname_ip()
