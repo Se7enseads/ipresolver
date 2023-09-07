@@ -95,19 +95,54 @@ def resolve_ip():
             print(f'IP: {ip_address}')
             print(f"{'*' * 40}\n\n")
         except socket.gaierror as error:
-            print(click.style(
-                f'Error: Unable to resolve hostname {hostname}.', fg="red"))
+            print(click.style(f'Error: Unable to resolve hostname {hostname}.',fg="green"))
+
+
+def delete_record():
+    record_id = click.prompt("Enter the ID of the record you want to delete")
+
+    try:
+        record_id = int(record_id)
+    except ValueError:
+        print(click.style("Invalid ID. Please enter a valid numeric ID.", fg="red"))
+        return
+
+    ip_addresses = get_ip_addresses()
+    for ip_address in ip_addresses:
+        if ip_address.id == record_id:
+            session.delete(ip_address)
+            session.commit()
+            print(click.style(f"Record with ID {record_id} deleted successfully.", fg="green"))
+            return
+
+    print(f"No record found with ID {record_id}.")
+
+
+def clear_database():
+    try:
+        session.query(IPAddress).delete()
+        session.commit()
+        print(click.style("Database cleared successfully.", fg="green"))
+    except Exception as e:
+        session.rollback()
+        print(click.style(f"Error clearing the database: {str(e)}", fg="red"))
 
 
 @click.command()
 @click.option('--resolve', is_flag=True, help="Resolve and store IP address for a URL.")
 @click.option('--history', is_flag=True, help="Display the database history.")
+@click.option('--delete', is_flag=True, help="Delete a record.")
+@click.option('--clear', is_flag=True, help="Clear the database.")
 def get_hostname_ip(resolve, history, delete, clear):
 
     if resolve:
         resolve_ip()
     elif history:
         display_ip_history()
+    elif delete:
+        delete_record()
+    elif clear:
+        clear_database()
 
     else:
         questions = [
@@ -116,6 +151,7 @@ def get_hostname_ip(resolve, history, delete, clear):
                           choices=[
                               "Resolve and Store IP Address",
                               "Display IP History",
+                              "Delete a record",
                               "Exit"
                           ]),
         ]
@@ -129,6 +165,11 @@ def get_hostname_ip(resolve, history, delete, clear):
 
             elif answers['menu'] == "Display IP History":
                 display_ip_history()
+                break
+
+            elif answers['menu'] == "Delete a record":
+                display_ip_history()
+                delete_record()
                 break
 
             elif answers['menu'] == "Resolve and Store IP Address":
