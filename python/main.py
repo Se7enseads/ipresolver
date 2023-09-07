@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base
 
+from pydantic import BaseModel, ValidationError, field_validator
 from tabulate import tabulate
 
 Base = declarative_base()
@@ -21,12 +22,26 @@ SUCCESS_COLOR = 'green'
 ERROR_COLOR = 'red'
 WARNING_COLOR = 'yellow'
 
+
 class IPAddress(Base):
     __tablename__ = 'ip_addresses'
 
     id = Column(Integer, primary_key=True)
     hostname = Column(String)
     ip_address = Column(String)
+
+
+class ResolveInput(BaseModel):
+    input_url: str
+
+    @field_validator('input_url')
+    def validate_url(cls, value):
+        if not is_valid_hostname(value):
+            raise ValueError(
+                "Invalid input. Please enter a valid hostname or URL.")
+        if len(value) <= 4:
+            raise ValueError("Hostname should be more than 4 characters.")
+        return value
 
 
 def is_valid_hostname(hostname):
@@ -68,27 +83,20 @@ def display_ip_history():
 
 def resolve_ip():
     while True:
-        input_url = click.prompt(
-            click.style("Please enter a website address (URL) or type 'back' to quit", fg="blue"), default='', show_default=False)
-
-        if input_url == 'back':
-            print(click.style("Operation aborted by the user.", fg=WARNING_COLOR))
-            break
-
         try:
-            parsed_url = urlparse(input_url)
-            if parsed_url.netloc:
-                hostname = parsed_url.netloc
-            else:
-                hostname = input_url
+            input_data = click.prompt(
+                click.style(
+                    "Please enter a website address (URL) or type 'back' to quit", fg="blue"),
+                default='',
+                show_default=False,
+            )
 
-            if not is_valid_hostname(hostname):
-                print(click.style("Invalid input. Please enter a valid hostname or URL.", fg=WARNING_COLOR))
-                continue
+            if input_data == 'back':
+                print(click.style("Operation aborted by the user.", fg=WARNING_COLOR))
+                break
 
-            if len(hostname) <= 4:
-                print(click.style("Hostname should be more than 4 characters.", fg=WARNING_COLOR))
-                continue
+            resolve_input = ResolveInput(input_url=input_data)
+            hostname = resolve_input.input_url
 
             ip_address = socket.gethostbyname(hostname)
             store_ip_address(engine, hostname, ip_address)
@@ -96,6 +104,8 @@ def resolve_ip():
             print(click.style(f'Hostname: {hostname}', fg=SUCCESS_COLOR))
             print(f'IP: {ip_address}')
             print(f"{'*' * 40}\n\n")
+        except ValidationError as e:
+            print(click.style(f"Error: {str(e)}", fg=ERROR_COLOR))
         except socket.gaierror as error:
             print(click.style(
                 f'Error: Unable to resolve hostname {hostname}.', fg=ERROR_COLOR))
@@ -107,7 +117,8 @@ def delete_record():
     try:
         record_id = int(record_id)
     except ValueError:
-        print(click.style("Invalid ID. Please enter a valid numeric ID.", fg=WARNING_COLOR))
+        print(click.style(
+            "Invalid ID. Please enter a valid numeric ID.", fg=WARNING_COLOR))
         return
 
     ip_addresses = get_ip_addresses()
@@ -119,7 +130,8 @@ def delete_record():
                 f"Record with ID {record_id} deleted successfully.", fg=SUCCESS_COLOR))
             return
 
-    print(click.style(f"No record found with ID {record_id}.", fg=WARNING_COLOR))
+    print(click.style(
+        f"No record found with ID {record_id}.", fg=WARNING_COLOR))
 
 
 def clear_database():
@@ -129,7 +141,8 @@ def clear_database():
         print(click.style("Database cleared successfully.", fg=SUCCESS_COLOR))
     except Exception as e:
         session.rollback()
-        print(click.style(f"Error clearing the database: {str(e)}", fg=ERROR_COLOR))
+        print(click.style(
+            f"Error clearing the database: {str(e)}", fg=ERROR_COLOR))
 
 
 @click.command()
