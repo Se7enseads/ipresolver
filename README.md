@@ -99,7 +99,7 @@ To run this code:
 cd python && python3 main.py
 ```
 
-To see more options commands run:
+To see more options run:
 
 ```bash
 python3 main.py --help
