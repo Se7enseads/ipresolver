@@ -1,14 +1,18 @@
+""" Module providing Function resolve ip. """
+# pylint: disable=E0401
+
 import socket
 import re
+from urllib.parse import urlparse
 import click
 import inquirer
 
-from urllib.parse import urlparse
 
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.exc import SQLAlchemyError
 
-from pydantic import BaseModel, ValidationError, field_validator, Field
+from pydantic import BaseModel, field_validator, Field
 from tabulate import tabulate
 
 Base = declarative_base()
@@ -24,6 +28,7 @@ WARNING_COLOR = 'yellow'
 
 
 class IPAddress(Base):
+    """ Class to handle the table for storing IP addresses. """
     __tablename__ = 'ip_addresses'
 
     id = Column(Integer, primary_key=True)
@@ -32,10 +37,13 @@ class IPAddress(Base):
 
 
 class ResolveInput(BaseModel):
+    """ Class to validate and handle user input for resolving IP addresses. """
     input_url: str = Field(min_length=6, max_length=20)
 
     @field_validator('input_url')
+    @classmethod
     def validate_url(cls, value):
+        """ Function to validate the entered URL. """
         if not is_valid_hostname(value):
             raise ValueError(
                 "Invalid input. Please enter a valid hostname or URL.")
@@ -43,11 +51,13 @@ class ResolveInput(BaseModel):
 
 
 def is_valid_hostname(hostname):
+    """ Function to validate the entered hostname. """
     hostname_pattern = r'^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$'
     return re.match(hostname_pattern, hostname)
 
 
-def store_ip_address(engine, hostname, ip_address):
+def store_ip_address(hostname, ip_address):
+    """ Function to store resolved hostnames in the database. """
 
     ip_entry = IPAddress(hostname=hostname, ip_address=ip_address)
 
@@ -57,6 +67,7 @@ def store_ip_address(engine, hostname, ip_address):
 
 
 def get_ip_addresses():
+    """ Function to retrieve all saved resolved hostnames from the database. """
 
     ip_addresses = session.query(IPAddress).all()
 
@@ -65,6 +76,7 @@ def get_ip_addresses():
 
 
 def display_ip_history():
+    """ Function to display resolved hostnames stored in the database. """
     ip_addresses = get_ip_addresses()
     if ip_addresses:
         row_data = [(data.hostname, data.ip_address)
@@ -80,6 +92,7 @@ def display_ip_history():
 
 
 def resolve_ip():
+    """ Function to resolve the entered URL/hostname and store it in the database. """
     while True:
         try:
             input_data = click.prompt(
@@ -93,21 +106,23 @@ def resolve_ip():
                 print(click.style("Operation aborted by the user.", fg=WARNING_COLOR))
                 break
 
-            resolve_input = ResolveInput(input_url=input_data)
-            hostname = resolve_input.input_url
+            # Use urlparse to extract the hostname from the URL
+            parsed_url = urlparse(input_data)
+            hostname = parsed_url.hostname or input_data
 
             ip_address = socket.gethostbyname(hostname)
-            store_ip_address(engine, hostname, ip_address)
+            store_ip_address(hostname, ip_address)
             print(f"\n\n{'*' * 40}")
             print(click.style(f'Hostname: {hostname}', fg=SUCCESS_COLOR))
             print(f'IP: {ip_address}')
             print(f"{'*' * 40}\n\n")
-        except socket.gaierror as error:
+        except socket.gaierror:
             print(click.style(
                 f'Error: Unable to resolve hostname {hostname}.', fg=ERROR_COLOR))
 
 
 def delete_record():
+    """ Function to delete a record from the database using the ID. """
     record_id = click.prompt("Enter the ID of the record you want to delete")
 
     try:
@@ -131,14 +146,15 @@ def delete_record():
 
 
 def clear_database():
+    """ Function to clear all records from the database. """
     try:
         session.query(IPAddress).delete()
         session.commit()
         print(click.style("Database cleared successfully.", fg=SUCCESS_COLOR))
-    except Exception as e:
+    except SQLAlchemyError as error:
         session.rollback()
         print(click.style(
-            f"Error clearing the database: {str(e)}", fg=ERROR_COLOR))
+            f"Error clearing the database: {str(error)}", fg=ERROR_COLOR))
 
 
 @click.command()
@@ -147,6 +163,7 @@ def clear_database():
 @click.option('--delete', is_flag=True, help="Delete a record.")
 @click.option('--clear', is_flag=True, help="Clear the database.")
 def get_hostname_ip(resolve, history, delete, clear):
+    """ Main function to interact with IP address resolution and management. """
 
     if resolve:
         resolve_ip()
@@ -190,4 +207,5 @@ def get_hostname_ip(resolve, history, delete, clear):
 
 
 if __name__ == "__main__":
+    #pylint: disable=E1120
     get_hostname_ip()
