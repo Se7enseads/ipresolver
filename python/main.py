@@ -4,6 +4,7 @@
 import socket
 import re
 from urllib.parse import urlparse
+import dataclasses
 import click
 import inquirer
 
@@ -27,15 +28,22 @@ ERROR_COLOR = 'red'
 WARNING_COLOR = 'yellow'
 
 
+@dataclasses.dataclass
 class IPAddress(Base):
-    """ Class to handle the table for storing IP addresses. """
+    """Class to handle the table for storing IP addresses."""
+
     __tablename__ = 'ip_addresses'
 
     id = Column(Integer, primary_key=True)
     hostname = Column(String)
     ip_address = Column(String)
 
+    def __init__(self, hostname, ip_address):
+        self.hostname = hostname
+        self.ip_address = ip_address
 
+
+@dataclasses.dataclass
 class ResolveInput(BaseModel):
     """ Class to validate and handle user input for resolving IP addresses. """
     input_url: str = Field(min_length=6, max_length=20)
@@ -193,19 +201,19 @@ def get_hostname_ip(resolve, history, delete, clear):
                 print(click.style("Operation aborted by the user.", fg=WARNING_COLOR))
                 break
 
-            elif answers['menu'] == "Display IP History":
+            if answers['menu'] == "Display IP History":
                 display_ip_history()
                 break
 
-            elif answers['menu'] == "Delete a record":
+            if answers['menu'] == "Delete a record":
                 display_ip_history()
                 delete_record()
                 break
 
-            elif answers['menu'] == "Resolve and Store IP Address":
+            if answers['menu'] == "Resolve and Store IP Address":
                 resolve_ip()
 
 
 if __name__ == "__main__":
-    #pylint: disable=E1120
+    # pylint: disable=E1120
     get_hostname_ip()
